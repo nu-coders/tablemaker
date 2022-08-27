@@ -25,7 +25,7 @@ public class CourseController {
 
     @GetMapping()
     public String welcome() {
-        return "Welcome to our API v1 for Auto Table Maker by NU Coders";
+        return "Welcome to our API for Auto Table Maker by NU Coders";
 	}
 
     @GetMapping(path="/getcourses")
