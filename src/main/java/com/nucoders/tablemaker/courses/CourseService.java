@@ -1,10 +1,13 @@
 package com.nucoders.tablemaker.courses;
 
 
+import java.lang.reflect.Array;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -46,12 +49,32 @@ public class CourseService {
             Course c = iterate.next();
             if(c.getCode().equals(courseCode)){
                 found.add(c);
-                System.out.println(c);
             }
         }
         return found;
     }
-
+    public Set<Integer> findCourseSections(String courseCode){
+        ArrayList<Course> found = new ArrayList<Course>(courseRepository.findByCode(courseCode));
+        Iterator<Course> iterate = found.iterator();
+        Set<Integer> sections = new HashSet<Integer>();
+        while(iterate.hasNext()){
+            Course c = iterate.next();
+            sections.add(c.getSection());
+        }
+        return sections;
+    }
+    public ArrayList<Course> constrainedFindCourse(String courseCode, Integer constraint){
+        ArrayList<Course> courses = new ArrayList<Course>(courseRepository.findAll());
+        ArrayList<Course> found = new ArrayList<Course>();
+        Iterator<Course> iterate = courses.iterator();
+        while(iterate.hasNext()){
+            Course c = iterate.next();
+            if(c.getCode().equals(courseCode) && c.getSection().equals(constraint)){
+                found.add(c);
+            }
+        }
+        return found;
+    }
     public ArrayList<ArrayList<Course>> findCourses(ArrayList<String> coursesWanted){
         ArrayList<ArrayList<Course>> available = new ArrayList<ArrayList<Course>>();
         for(String course : coursesWanted){
@@ -64,12 +87,49 @@ public class CourseService {
     public ArrayList<ArrayList<ArrayList<Course>>> createTables(ArrayList<String> coursesWanted){
         ArrayList<ArrayList<Course>> available = new ArrayList<ArrayList<Course>>();
         for(String course : coursesWanted){
-            available.add(findCourse(course));
+            available.add(courseRepository.findByCode(course));
         }
         return createOptions(available);
-    
     }
     
+    public ArrayList<ArrayList<ArrayList<Course>>> constrainedCreateTables(ArrayList<String> coursesWanted,ArrayList<String> constraints){
+        ArrayList<ArrayList<Course>> available = new ArrayList<ArrayList<Course>>();
+        
+        for(int i=0;i<coursesWanted.size();i++){
+
+
+            if(constraints.get(i).equals("0")){
+                available.add(findCourse(coursesWanted.get(i)));
+            }else{
+                available.add(courseRepository.findByCodeAndSection(coursesWanted.get(i), Integer.valueOf(constraints.get(i))));
+            }
+        }
+        return createOptions(available);
+    }
+    
+    public ArrayList<ArrayList<ArrayList<Course>>> constrainedDaysCreateTables(ArrayList<String> coursesWanted, ArrayList<Integer> daysWanted){
+        ArrayList<ArrayList<Course>> available = new ArrayList<ArrayList<Course>>();
+        for(String course : coursesWanted){
+            available.add(findCourse(course));
+        }
+        
+        return constraintTableDays(createOptions(available),daysWanted);
+    }
+    public ArrayList<ArrayList<ArrayList<Course>>> constraintTableDays(ArrayList<ArrayList<ArrayList<Course>>> tables, ArrayList<Integer> daysWanted){
+        ArrayList<ArrayList<ArrayList<Course>>> tablesConstrained = new ArrayList<ArrayList<ArrayList<Course>>>();
+        for(ArrayList<ArrayList<Course>> table:tables){
+            Set<Integer> daysInTable = new HashSet<Integer>();
+            for(ArrayList<Course> courseFull : table){
+                for(Course coursePart : courseFull){
+                    daysInTable.add(coursePart.getDay());
+                }
+            }
+            if(daysWanted.contains(daysInTable.size())){
+                tablesConstrained.add(table);
+            }
+        }
+        return tablesConstrained;
+    }
 /////////////////////////
     public ArrayList<Course> searchCourse(String courseCode,String studentId){
         ArrayList<Course> courses = new ArrayList<Course>(courseRepository.findAll());
@@ -80,12 +140,10 @@ public class CourseService {
             if(c.getCode().equals(courseCode)){
                 found.add(c);
                 //c.getRegisteredStudents().add(studentId);
-                System.out.println(c);
 
             }
 
         }
-        System.out.println(found);
         return found;
     }
     
@@ -264,18 +322,18 @@ public class CourseService {
         
     }
 
-    @Transactional
-    public void dropCourse(String courseCode, Integer drop,String studentId) {
-        Course course = courseRepository.findByCode(courseCode).orElseThrow(()-> new IllegalStateException("Not Found"));
-        if (drop ==1 && course.getRegisteredStudents().contains(studentId)){
-            course.setRegistered(course.getRegistered()-1);
-            course.getRegisteredStudents().remove(studentId);
-        }else {
-            throw new IllegalStateException("Course is not found or you are nor enrolled");
+    //@Transactional
+    // public void dropCourse(String courseCode, Integer drop,String studentId) {
+    //     Course course = courseRepository.findByCode(courseCode).orElseThrow(()-> new IllegalStateException("Not Found"));
+    //     if (drop ==1 && course.getRegisteredStudents().contains(studentId)){
+    //         course.setRegistered(course.getRegistered()-1);
+    //         course.getRegisteredStudents().remove(studentId);
+    //     }else {
+    //         throw new IllegalStateException("Course is not found or you are nor enrolled");
 
-        }
+    //     }
         
-    }
+    // }
 
     @Transactional
     public ArrayList<Course> getTable(String studentId) {//returns your regisstered courses
@@ -296,22 +354,11 @@ public class CourseService {
     public void searchCourseId(Integer courseId,String studentId){
 
         Course course = courseRepository.findById(Long.valueOf(courseId)).orElseThrow(()-> new IllegalStateException("Not Found"));
-        System.out.println(course);
         if (course.getRegistered()<course.getTotal() && !course.getRegisteredStudents().contains(studentId)){
             System.out.println("testing");
             course.setRegistered(course.getRegistered()+1);
             course.getRegisteredStudents().add(studentId);
         }
-    }
-    //should be private for admin panel only
-    public void addNewCourse(Course course) {
-        Optional<Course> courseByCode = courseRepository.findByCode(course.getCode());
-        if(courseByCode.isPresent()) {
-            throw new IllegalStateException("Code Taken");
-        }
-
-        courseRepository.save(course);
-        
     }
 
 
