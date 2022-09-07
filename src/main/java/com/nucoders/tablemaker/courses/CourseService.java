@@ -94,10 +94,7 @@ public class CourseService {
     
     public ArrayList<ArrayList<ArrayList<Course>>> constrainedCreateTables(ArrayList<String> coursesWanted,ArrayList<String> constraints){
         ArrayList<ArrayList<Course>> available = new ArrayList<ArrayList<Course>>();
-        
         for(int i=0;i<coursesWanted.size();i++){
-
-
             if(constraints.get(i).equals("0")){
                 available.add(findCourse(coursesWanted.get(i)));
             }else{
@@ -150,57 +147,48 @@ public class CourseService {
     public ArrayList<ArrayList<ArrayList<Course>>> createOptions(ArrayList<ArrayList<Course>> available){
         ArrayList<ArrayList<ArrayList<Course>>> options = new ArrayList<ArrayList<ArrayList<Course>>>();
         ArrayList<String> courseNames = new ArrayList<String>();
-        Iterator<ArrayList<Course>> iter1 = available.iterator();
-        ArrayList<Integer> coursesSectionNumbers = new ArrayList<Integer>();
-        while(iter1.hasNext()){
-            ArrayList<Course> courseAvailable = iter1.next(); 
+        Set<Integer> coursesSectionNumbersSet = new HashSet<Integer>();
+        for(ArrayList<Course> currCourseList : available){
             ArrayList<Integer> courseSections = new ArrayList<Integer>(); 
-            Integer indexOfCourse = available.indexOf(courseAvailable);
-            Iterator<Course> iter2 = courseAvailable.iterator();
-            Course currCourse = iter2.next();
-            Integer currCourseSection = currCourse.getSection();
-            courseSections.add(currCourseSection);
-            String currCourseName = currCourse.getCode();
-            courseNames.add(indexOfCourse,currCourseName);
-            while(iter2.hasNext()){
-                currCourse = iter2.next();
-                currCourseSection = currCourse.getSection();
-                if(!courseSections.contains(currCourseSection)){
-                    courseSections.add(currCourseSection);
-                }
+            Integer indexOfCourse = available.indexOf(currCourseList);
+            for(Course currCoursePart : currCourseList){
+                Integer currCourseSection = currCoursePart.getSection();
+                String currCourseName = currCoursePart.getCode();
+                courseNames.add(indexOfCourse,currCourseName);
+                courseSections.add(currCourseSection);
             }
-            coursesSectionNumbers.add(courseSections.size());
-
+            coursesSectionNumbersSet.add(courseSections.size());
         }
-        iter1 = available.iterator();
-        while(iter1.hasNext()){
+        ArrayList<Integer> coursesSectionNumbers = new ArrayList<Integer>();
+        coursesSectionNumbers.addAll(coursesSectionNumbersSet);
+        for(ArrayList<Course> currCourseList : available){
             ArrayList<ArrayList<Course>> currCourseSection = new ArrayList<ArrayList<Course>>();
-            ArrayList<Course> courseAvailable = iter1.next(); 
-            Integer indexOfCourse = available.indexOf(courseAvailable);
-            Iterator<Course> iter2 = courseAvailable.iterator();
+            Integer indexOfCourse = available.indexOf(currCourseList);
             for (int i=0;i<coursesSectionNumbers.get(indexOfCourse)*2;i++){
                 ArrayList<Course> newCourse = new ArrayList<Course>();
                 currCourseSection.add(newCourse);
+                System.out.println("This is i for currCourseSection");
+                System.out.println(i);
             }
-            while(iter2.hasNext()){
-                Course currCourse = iter2.next();
-                Integer currCourseSectionNow = currCourse.getSection();
-                if(currCourse.getSubSection().equals(0)){
-                    Integer i = (currCourseSectionNow-1)*2;
-                    Integer j = i+1;
-                    currCourseSection.get(i).add(currCourse);
-                    currCourseSection.get(j).add(currCourse);
-                }
-                if(currCourse.getSubSection().equals(1)){
-                    Integer i = (currCourseSectionNow-1)*2;
-                    Integer j = i+1;
-                    currCourseSection.get(i).add(currCourse);
+            for(Course currCoursePart : currCourseList){
+                Integer currCourseSectionNow = currCoursePart.getSection();
+                Integer currCourseSubSectionNow = currCoursePart.getSubSection();
 
-                }
-                if(currCourse.getSubSection().equals(2)){
+                if(currCourseSubSectionNow.equals(0)){
                     Integer i = (currCourseSectionNow-1)*2;
                     Integer j = i+1;
-                    currCourseSection.get(j).add(currCourse);
+                    currCourseSection.get(i).add(currCoursePart);
+                    currCourseSection.get(j).add(currCoursePart);
+                }
+                if(currCourseSubSectionNow.equals(1)){
+                    Integer i = (currCourseSectionNow-1)*2;
+                    Integer j = i+1;
+                    currCourseSection.get(i).add(currCoursePart);
+                }
+                if(currCourseSubSectionNow.equals(2)){
+                    Integer i = (currCourseSectionNow-1)*2;
+                    Integer j = i+1;
+                    currCourseSection.get(j).add(currCoursePart);
                 }
             }
             options.add(currCourseSection);
